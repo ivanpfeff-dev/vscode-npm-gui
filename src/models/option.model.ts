@@ -1,7 +1,8 @@
 /**
  * The extension settings
  */
-export interface ExtensionConfiguration {
+export interface ExtensionConfiguration
+{
   /**
    * The NuGet Package Registries
    */
@@ -19,7 +20,8 @@ export interface ExtensionConfiguration {
 /**
  * The package source model
  */
-export interface PackageSource {
+export interface PackageSource
+{
   /**
    * The package source id
    */
@@ -28,6 +30,10 @@ export interface PackageSource {
    * The package source name
    */
   sourceName: string;
+  /**
+   * The directory to use for local sources
+   */
+  sourceDirectory?: string;
   /**
    * The package source type
    */
@@ -57,7 +63,8 @@ export interface PackageSource {
 /**
  * The package source types
  */
-export enum SourceType {
+export enum SourceType
+{
   /**
    * The package source is hosted on a server
    */
@@ -65,13 +72,14 @@ export enum SourceType {
   /**
    * The package source is a directory [Unsupported yet!]
    */
-  local = 2
+  local = 2,
 }
 
 /**
  * The auth types
  */
-export enum AuthorizationType {
+export enum AuthorizationType
+{
   /**
    * The endpoint doesn't need an auth token
    */
@@ -85,7 +93,8 @@ export enum AuthorizationType {
 /**
  * The auth option
  */
-export interface AuthorizationOption {
+export interface AuthorizationOption
+{
   /**
    * The auth type
    */
@@ -103,7 +112,8 @@ export interface AuthorizationOption {
 /**
  *  The proxy settings
  */
-export interface ProxyOption {
+export interface ProxyOption
+{
   /**
    * Is `true` when the proxy is active in vscode
    */
@@ -121,7 +131,8 @@ export interface ProxyOption {
 /**
  * The request settings for the all requests
  */
-export interface RequestOption {
+export interface RequestOption
+{
   /**
    * Filling in the proxy module
    */

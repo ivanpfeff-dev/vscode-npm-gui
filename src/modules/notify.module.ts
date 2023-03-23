@@ -6,12 +6,16 @@ import { ServiceResult } from '../models/common.model';
  * @param message The message for showing in the status bar
  * @param hideAfterTimeout Timeout in milliseconds after which the message will be disposed
  */
-export function setStatusBarMessage(message: string | undefined, hideAfterTimeout?: number) {
-  if (message) {
-    if (hideAfterTimeout) {
+export function setStatusBarMessage(message: string | undefined, hideAfterTimeout?: number)
+{
+  if (message)
+  {
+    if (hideAfterTimeout)
+    {
       vscode.window.setStatusBarMessage(message, hideAfterTimeout);
     }
-    else {
+    else
+    {
       vscode.window.setStatusBarMessage(message);
     }
   }
@@ -20,7 +24,8 @@ export function setStatusBarMessage(message: string | undefined, hideAfterTimeou
 /**
  * Clear the status bar
  */
-export function resetStatusBarMessage() {
+export function resetStatusBarMessage()
+{
   vscode.window.setStatusBarMessage('');
 }
 
@@ -28,7 +33,8 @@ export function resetStatusBarMessage() {
  * Show info message
  * @param message The message for showing in the message box (with default box)
  */
-export function showInformationMessage(message: string) {
+export function showInformationMessage(message: string)
+{
   vscode.window.showInformationMessage(message);
 }
 
@@ -36,7 +42,8 @@ export function showInformationMessage(message: string) {
  * Show error message
  * @param message The message for showing in the message box (with red box)
  */
-export function showErrorMessage(message: any) {
+export function showErrorMessage(message: any)
+{
   vscode.window.showErrorMessage(message);
 }
 
@@ -45,12 +52,16 @@ export function showErrorMessage(message: any) {
  * @param serviceResult The result of a service (e.g install/remove...)
  * @param successMessage Show success message
  */
-export function showCommandResult(serviceResult: ServiceResult, successMessage: string | undefined = undefined) {
+export function showCommandResult(serviceResult: ServiceResult, successMessage: string | undefined = undefined)
+{
   resetStatusBarMessage();
-  if (serviceResult.isSuccessful && (successMessage || serviceResult.message)) {
+  if (serviceResult.isSuccessful && (successMessage || serviceResult.message))
+  {
     setStatusBarMessage(successMessage ? successMessage : serviceResult.message, 5000);
-  } else {
-    if (serviceResult.message) {
+  } else
+  {
+    if (serviceResult.message)
+    {
       setStatusBarMessage(serviceResult.message, 5000);
     }
     showErrorMessage(serviceResult.exception);
@@ -62,8 +73,10 @@ export function showCommandResult(serviceResult: ServiceResult, successMessage: 
  * @param serviceResults The results of a service (e.g install/remove...)
  * @param successMessage Show success message
  */
-export function showCommandResults(commandResults: ServiceResult[], successMessage: string | undefined = undefined) {
-  commandResults.forEach(x => {
+export function showCommandResults(commandResults: ServiceResult[], successMessage: string | undefined = undefined)
+{
+  commandResults.forEach(x =>
+  {
     showCommandResult(x, successMessage);
   });
 }

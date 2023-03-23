@@ -2,7 +2,8 @@ import fetch from 'node-fetch';
 const base64 = require('base-64');
 const utf8 = require('utf8');
 import { PackageMetadata, PackageSearchResult, PackageVersion } from '../models/nuget.model';
-import { AuthorizationOption, AuthorizationType, PackageSource, RequestOption } from '../models/option.model';
+import { AuthorizationOption, AuthorizationType, PackageSource, RequestOption, SourceType } from '../models/option.model';
+import { localGetPackageVersions, localSearchPackage } from './local.module';
 import { getProxyOption } from './proxy.module';
 import { EOL, jsonToQueryString } from './utils';
 
@@ -13,21 +14,34 @@ import { EOL, jsonToQueryString } from './utils';
  * @param vscodeHttpConfig vscode http config
  * @returns
  */
-function getRequestOptions(authOption: AuthorizationOption, nugetRequestTimeout: number, vscodeHttpConfig: any): RequestOption {
+function getRequestOptions(authOption: AuthorizationOption, nugetRequestTimeout: number, vscodeHttpConfig: any): RequestOption
+{
   const proxyOption = getProxyOption(vscodeHttpConfig);
   const requestOption: RequestOption = {
     timeout: nugetRequestTimeout,
     headers: {}
   };
 
-  if (proxyOption.proxyIsActive) {
+  if (proxyOption.proxyIsActive)
+  {
     requestOption.agent = proxyOption.httpsProxyAgent;
-    if (proxyOption.headers) {
+    if (proxyOption.headers)
+    {
       requestOption.headers.push(proxyOption.headers);
     }
   }
 
-  if (authOption.authType == AuthorizationType[AuthorizationType.basicAuth]) {
+  if (!authOption)
+  {
+    authOption = {
+      authType: AuthorizationType[AuthorizationType.none],
+      username: "",
+      password: "",
+    };
+  }
+
+  if (authOption.authType == AuthorizationType[AuthorizationType.basicAuth])
+  {
     var bytes = utf8.encode(authOption.username + ":" + authOption.password);
     var encoded = base64.encode(bytes);
     requestOption.headers['Authorization'] = 'Basic ' + encoded;
@@ -43,24 +57,36 @@ function getRequestOptions(authOption: AuthorizationOption, nugetRequestTimeout:
  * @param vscodeHttpConfig vscode http config
  * @returns `PackageVersion`
  */
-async function getPackageVersions(packageName: string, packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion> {
+async function getPackageVersions(packageName: string, packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion>
+{
   let result: PackageVersion | undefined | null;
   let errors: string[] = [];
-  try {
-    result = await Promise.any(packageSources.map(async (src) => {
+  try
+  {
+    result = await Promise.any(packageSources.map(async (src) =>
+    {
+      if (src.sourceType.toString() === SourceType[SourceType.local])
+      {
+        return localGetPackageVersions(packageName, src);
+      }
+
       let url = src.packageVersionsUrl.replace("{{packageName}}", packageName?.toLowerCase());
       const requestOption = getRequestOptions(src.authorization, nugetRequestTimeout, vscodeHttpConfig);
       return await fetch(url, requestOption)
-        .then(async response => {
+        .then(async response =>
+        {
           const rawResult = await response.text();
           let jsonResponse;
-          try {
+          try
+          {
             jsonResponse = JSON.parse(rawResult);
             if (jsonResponse && !Array.isArray(jsonResponse.versions)
-              || (Array.isArray(jsonResponse.versions) && jsonResponse.versions.length == 0)) {
+              || (Array.isArray(jsonResponse.versions) && jsonResponse.versions.length == 0))
+            {
               throw "not found";
             }
-          } catch (ex) {
+          } catch (ex)
+          {
             errors.push(`
             [NuGet Package Manager GUI => ERROR!!!]
             [Request to url:${url}]
@@ -73,7 +99,8 @@ async function getPackageVersions(packageName: string, packageSources: PackageSo
 
           return jsonResponse;
         })
-        .then(jsonResponse => {
+        .then(jsonResponse =>
+        {
           let json: PackageVersion = {
             packageName: packageName,
             versions: jsonResponse.versions,
@@ -82,12 +109,14 @@ async function getPackageVersions(packageName: string, packageSources: PackageSo
           };
           return json;
         })
-        .catch(error => {
+        .catch(error =>
+        {
           throw `[An error occurred in the loading package versions (package:${packageName})] ${error.message}`;
         });
     }));
 
-  } catch (e) {
+  } catch (e)
+  {
     console.log(e);
     console.log(errors);
     throw `[An error occurred in the loading package versions (package:${packageName})] details logged in VSCode developer tools`;
@@ -104,7 +133,8 @@ async function getPackageVersions(packageName: string, packageSources: PackageSo
  * @param vscodeHttpConfig vscode http config
  * @returns `PackageVersion`
  */
-export async function fetchPackageVersions(packageName: string, packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion> {
+export async function fetchPackageVersions(packageName: string, packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion>
+{
   return getPackageVersions(packageName, packageSources, nugetRequestTimeout, vscodeHttpConfig);
 }
 
@@ -116,8 +146,8 @@ export async function fetchPackageVersions(packageName: string, packageSources: 
  * @param vscodeHttpConfig vscode http config
  * @returns `PackageVersion[]`
  */
-export async function fetchPackageVersionsBatch(packages: string[], packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion[]> {
-
+export async function fetchPackageVersionsBatch(packages: string[], packageSources: PackageSource[], nugetRequestTimeout: number, vscodeHttpConfig: any): Promise<PackageVersion[]>
+{
   let result = await Promise.all(
     packages.map(pkgName => getPackageVersions(pkgName, packageSources, nugetRequestTimeout, vscodeHttpConfig))
   );
@@ -134,14 +164,22 @@ export async function fetchPackageVersionsBatch(packages: string[], packageSourc
  * @param nugetRequestTimeout request timeout
  * @returns list of packages
  */
-export async function searchPackage(query: string, packageSources: PackageSource[], take: number, skip: number, nugetRequestTimeout: number, vscodeHttpConfig: any, packageSourceId?: number): Promise<PackageSearchResult[]> {
-
-  if (packageSourceId != null) {
+export async function searchPackage(query: string, packageSources: PackageSource[], take: number, skip: number, nugetRequestTimeout: number, vscodeHttpConfig: any, packageSourceId?: number): Promise<PackageSearchResult[]>
+{
+  if (packageSourceId != null)
+  {
     packageSources = packageSources.filter(x => x.id == packageSourceId!);
   }
 
   const results = await Promise.all(
-    packageSources.map(async src => {
+    packageSources.map(async src =>
+    {
+
+      if (src.sourceType.toString() === SourceType[SourceType.local])
+      {
+        return localSearchPackage(query, src, take, skip);
+      }
+
       const queryString = jsonToQueryString({
         q: query,
         preRelease: src.preRelease,
@@ -152,33 +190,36 @@ export async function searchPackage(query: string, packageSources: PackageSource
       let url = `${src.searchUrl}${queryString}`;
       const requestOption = getRequestOptions(src.authorization, nugetRequestTimeout, vscodeHttpConfig);
       return fetch(url, requestOption)
-        .then(async response => {
+        .then(async response =>
+        {
           const rawResult = await response.text();
           let jsonResponse;
-          try {
+          try
+          {
             jsonResponse = JSON.parse(rawResult);
             jsonResponse.packageSourceName = src.sourceName;
             jsonResponse.packageSourceId = src.id;
-          } catch (ex) {
+          } catch (ex)
+          {
             console.log(`[NuGet Package Manager GUI => ERROR!!!]${EOL}[Request to url:${url}]${EOL}[timeout:${requestOption.timeout}]${EOL}[proxy is active:${!!requestOption.agent}]${EOL}[result:${rawResult}]${EOL}`);
             throw ex;
           }
 
           return jsonResponse;
         })
-        .catch(error => {
+        .catch(error =>
+        {
           throw `[An error occurred in the searching package] ${error.message}`;
         });
     }));
 
-  return results.map(result => {
+  return results.map(result =>
+  {
     return ({
       packageSourceId: result.packageSourceId,
       packageSourceName: result.packageSourceName,
       packages: <PackageMetadata[]>result.data ?? [],
       totalHits: +result.totalHits
     });
-
   });
-
 }

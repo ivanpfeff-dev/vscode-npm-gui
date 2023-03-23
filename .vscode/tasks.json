@@ -38,6 +38,18 @@
         "npm: watch-tests"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "ng build front-end",
+      "type": "shell",
+      "command": "ng",
+      "args": [
+        "build"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/front-end"
+      },
+      "problemMatcher": []
     }
   ]
 }
