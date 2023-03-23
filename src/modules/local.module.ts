@@ -1,13 +1,12 @@
-//const fs = require('fs');
 const path = require('path');
 const admZip = require('adm-zip');
 const xml2js = require('xml2js');
+const minimatch = require('minimatch');
 
 import * as fs from 'fs/promises';
 import AdmZip = require("adm-zip");
 import { PackageMetadata, PackageSearchResult, PackageVersion, SearchPackageResultVersion } from "../models/nuget.model";
 import { PackageSource } from "../models/option.model";
-import { version } from 'os';
 
 async function readNuspecFile(zip: AdmZip): Promise<PackageMetadata | null>
 {
@@ -68,7 +67,8 @@ export async function localSearchPackage(query: string, packageSource: PackageSo
 
   var nugetDirectory: string = packageSource.sourceDirectory;
   const files = await fs.readdir(nugetDirectory);
-  const metadataPromises = files
+  const filteredFiles = files.filter((file) => minimatch(file, query));
+  const metadataPromises = filteredFiles
     .filter((file: string) => path.extname(file) === '.nupkg')
     .map(async (file: string) =>
     {
